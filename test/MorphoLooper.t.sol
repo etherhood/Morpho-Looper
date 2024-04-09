@@ -69,7 +69,7 @@ contract MorphoLooperTest is Test {
     }
 
     function test_deleverage() public {
-        /// create a leveraged position
+        /// Create a leveraged position
         test_leverage();
 
         bytes memory swapData = abi.encodeWithSelector(
@@ -90,5 +90,26 @@ contract MorphoLooperTest is Test {
 
         /// Collateral should decrease by 21000 withdrawn for swapping
         assertEq(position.collateral, 50_000e18 - 21_000e18);
+    }
+
+    function test_switchMarket() public {
+        test_leverage();
+
+        Id newId = abi.decode(abi.encode(0xdb760246f6859780f6c1b272d47a8f64710777121118e56e0cdb4b8b744a3094), (Id));
+
+        MarketParams memory newMarketParams = morpho.idToMarketParams(newId);
+
+        vm.prank(ALICE);
+        morphoLooper.switchMarket(marketParams, newMarketParams);
+
+        Position memory position = morpho.position(id, ALICE);
+
+        /// Collateral and borrow shares should become zero
+        assertEq(position.collateral, 0);
+        assertEq(position.borrowShares, 0);
+
+        position = morpho.position(newId, ALICE);
+        /// Collateral should be same as old position collateral amount
+        assertEq(position.collateral, 50_000e18);
     }
 }
